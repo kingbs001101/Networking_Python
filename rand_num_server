@@ -1,0 +1,31 @@
+import socket
+import random
+import time
+
+def generate_random_number():
+    return random.randint(1, 100)
+
+def start_server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('192.168.0.91', 9999))
+    server_socket.listen(1)
+
+    print("서버가 시작되었습니다. 클라이언트의 연결을 기다립니다...")
+
+    conn, addr = server_socket.accept()
+    print("클라이언트가 연결되었습니다.")
+
+    try:
+        while True:
+            random_number = generate_random_number()
+            print(f"랜덤 숫자: {random_number}")
+            conn.sendall(str(random_number).encode())
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("서버를 종료합니다.")
+    finally:
+        conn.close()
+        server_socket.close()
+
+if __name__ == "__main__":
+    start_server()
