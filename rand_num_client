@@ -1,0 +1,46 @@
+import socket
+import matplotlib.pyplot as plt
+
+def create_graph():
+    fig, ax = plt.subplots()
+    ax.set_xlabel('시간 (초)')
+    ax.set_ylabel('랜덤 숫자')
+    ax.set_title('실시간 랜덤 숫자 그래프')
+    ax.grid(True)
+    return fig, ax
+
+def update_graph(i, ax):
+    data = client_socket.recv(1024).decode()
+    if not data:
+        client_socket.close()
+        return
+    random_number = int(data)
+    data_points.append(random_number)
+    print(f"받은 랜덤 숫자: {random_number}")
+    ax.clear()
+    ax.set_xlim(max(0, i - 4), i + 1)  # 최근 5개 데이터 포인트만 보이도록 x축 범위 제한
+    ax.plot(range(len(data_points)), data_points, marker='o')
+    ax.set_xlabel('시간 (초)')
+    ax.set_ylabel('랜덤 숫자')
+    ax.set_title('실시간 랜덤 숫자 그래프')
+    ax.grid(True)
+
+def start_client():
+    global client_socket, data_points
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('192.168.0.91', 9999))
+
+    data_points = []
+
+    fig, ax = create_graph()
+
+    for i in range(100):
+        update_graph(i, ax)
+        plt.pause(1)
+
+    client_socket.close()
+    plt.show()
+
+if __name__ == "__main__":
+    start_client()
