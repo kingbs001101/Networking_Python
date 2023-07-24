@@ -1,0 +1,56 @@
+import socket
+import random
+import time
+import nidaqmx
+
+def start_server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('168.131.49.15', 9999))
+    server_socket.listen(1)
+
+    print("서버가 시작되었습니다. 클라이언트의 연결을 기다립니다...")
+
+    conn, addr = server_socket.accept()
+    print("클라이언트가 연결되었습니다.")
+
+    
+
+    try:
+        
+        while True:
+            # 반복 주기 (초)
+            repeat_interval = 1
+
+            # 남은 시간(대기시간) 초기화
+            elapsed_time = 0
+
+            # 경과시간 시작
+            start_time_3 = time.time()
+            with nidaqmx.Task() as task0:
+    
+                # ai0 채널의 전압 신호 접근
+                task0.ai_channels.add_ai_voltage_chan("Dev2/ai0")
+                voltage = round(task0.read(),2)
+                print(f"ai0 전압 : {voltage}")
+                conn.sendall(str(voltage).encode())
+                    
+                # 경과 시간 계산
+                elapsed_time = time.time() - start_time_3
+                        
+                # 남은 시간 계산
+                remaining_time = repeat_interval - elapsed_time
+
+                print("경과시간 : ", elapsed_time, "\n남은시간 : ",remaining_time,"\n")
+                    
+
+                # 남은 시간을 대기
+                time.sleep(remaining_time)
+
+    except KeyboardInterrupt:
+        print("서버를 종료합니다.")
+    finally:
+        conn.close()
+        server_socket.close()
+
+if __name__ == "__main__":
+    start_server()
