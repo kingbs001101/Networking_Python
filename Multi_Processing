@@ -1,0 +1,141 @@
+import nidaqmx
+import matplotlib.pyplot as plt
+import time
+import multiprocessing
+import os
+import sys
+
+
+
+# Create a Queue for data sharing
+queue1 = multiprocessing.Queue()
+# Create additional Queues for data sharing
+queue2 = multiprocessing.Queue()
+
+
+def read_ai0_voltage(queue1,queue2):
+
+    with nidaqmx.Task() as task0,  nidaqmx.Task() as task1 :
+        # access channel ai0 & read voltage
+        task0.ai_channels.add_ai_voltage_chan("Dev1/ai0")
+        task1.ai_channels.add_ai_voltage_chan("Dev1/ai1")
+
+        # Set loop conditions
+        start_time_1 = time.time()
+        while time.time() - start_time_1  < 100:
+            
+            start_time_2 = time.time()
+            # read ai0 channel signal (voltage)
+            voltage_ai0 = task0.read()
+            # Put the voltage data into the queue for sharing
+            queue1.put(voltage_ai0)
+
+            voltage_ai1 = task1.read()
+
+            queue2.put(voltage_ai1)
+
+            
+            process_time = time.time() - start_time_2
+            print("처리시간 : ",process_time)
+
+            time.sleep(0.05-process_time)
+
+def plot_ai0_data(queue1):
+   
+    Data_ai0 = []
+
+    # Create a single figure with two subplots
+    fig,ax_ai0 = plt.subplots()
+    
+    ax_ai0.set_xlabel('Sample')
+    ax_ai0.set_ylabel('Voltage')
+    ax_ai0.set_title('Voltage - AI0')
+
+    while True:
+
+        # Check if there is new data in the queue
+        while not queue1.empty():
+            voltage_ai0 = queue1.get()
+            # Append the voltage to the Data_ai0 list
+            Data_ai0.append(voltage_ai0)
+
+        # display ai0 channel voltage value in graph
+        ax_ai0.plot(Data_ai0, color='red')
+
+        # Show only the latest 50 data
+        ax_ai0.set_xlim(len(Data_ai0) - 50, len(Data_ai0) + 50)
+
+
+     
+        # update graph
+        plt.pause(0.0001)
+
+        if not plt.fignum_exists(fig.number):
+            print("process_1 has finished.")
+            sys.exit(0)
+            #break
+
+
+def plot_ai1_data(queue2):
+    
+    Data_ai1 = []
+
+    # Create a single figure with two subplots
+    fig,ax_ai1 = plt.subplots()
+
+    ax_ai1.set_xlabel('Sample')
+    ax_ai1.set_ylabel('Voltage')
+    ax_ai1.set_title('Voltage - AI1')
+
+
+
+    while True:
+
+        # Check if there is new data in the queue
+        while not queue2.empty():
+            voltage_ai1 = queue2.get()
+            # Append the voltage to the Data_ai0 list
+            Data_ai1.append(voltage_ai1)
+
+        # display ai0 channel voltage value in graph
+        ax_ai1.plot(Data_ai1, color='black')
+
+        # Show only the latest 50 data
+        ax_ai1.set_xlim(len(Data_ai1) - 50, len(Data_ai1) + 50)
+
+        # update graph
+        plt.pause(0.0001)
+
+        if not plt.fignum_exists(fig.number):
+            print("process_1 has finished.")
+            sys.exit(0)
+            #break
+
+if __name__ == "__main__":
+  
+    process_1 = multiprocessing.Process(target=read_ai0_voltage, args=(queue1, queue2,))
+    process_2 = multiprocessing.Process(target=plot_ai0_data, args=(queue1,))
+    process_3 = multiprocessing.Process(target=plot_ai1_data, args=(queue2,))
+
+    process_1.start()
+    process_2.start()
+    process_3.start()
+
+    # Wait for process_2 and process_3 to finish before continuing
+    process_2.join()
+    process_3.join()
+
+    print("process_2 has finished.")
+    print("process_3 has finished.")
+
+    # The rest of your code here
+    if process_1.is_alive():
+        process_1.terminate()
+        process_1.join()  # Wait for process_1 to finish gracefully
+
+    print("process_1 has finished.")
+    print("All processes have finished.\n****************************************")
+
+
+
+print(queue1)
