@@ -1,0 +1,39 @@
+# 클라이언트 측 코드 
+# 필요한 라이브러리를 인용 
+import socket
+import matplotlib.pyplot as plt
+
+# 그래프를 실시간 업데이트
+def input_message():
+
+    # 소켓으로부터 최대1025바이트의 데이터를 받아옴
+    # 받아온 데이터를 디코딩 해서 data 변수에 저장 
+    data = client_socket.recv(1024).decode()
+
+    # 받아온 데이터가 비어있다면(클라이언트가 연결을 끊으면) 소켓을 닫고 함수를 종료
+    if not data:
+        client_socket.close()
+        return
+    
+    print("부성 :" ,data)
+
+# 클라이언트 실행을 시작 
+def start_client():
+
+    # 전역변수 선언
+    global client_socket, data_points
+
+    # 클라이언트 소켓을 생성하고 서버에 연결 
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('192.168.30.1', 9999))
+
+    # updata_graph 함수를 실행 
+    for i in range(1000):
+        input_message()
+
+    # 클라이언트 소켓 닫기 
+    client_socket.close()
+        
+# 메인 코드 실행 
+if __name__ == "__main__":
+    start_client()
